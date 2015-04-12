@@ -86,7 +86,7 @@ namespace MCServer_World_Converter
                 rootObject.Add("foodTickTimer", player.HungerTimer);
                 rootObject.Add("gamemode", (int)player.GameType);
                 rootObject.Add("health", player.Health);
-                rootObject.Add("inventory", convertPlayerInventory(player.Items, 36));
+                rootObject.Add("inventory", convertPlayerInventory(player.Items));
                 rootObject.Add("isflying", player.Air);
                 rootObject.Add("position", new JArray(player.Position.X, player.Position.Y, player.Position.Z));
                 rootObject.Add("rotation", new JArray(player.Rotation.Yaw, player.Rotation.Pitch, 0.0));
@@ -143,7 +143,7 @@ namespace MCServer_World_Converter
             return jItem;
         }
 
-        private JArray convertPlayerInventory(ItemCollection itemCollection, int length)
+        private JArray convertPlayerInventory(ItemCollection itemCollection)
         {
             JArray array = new JArray();
 
