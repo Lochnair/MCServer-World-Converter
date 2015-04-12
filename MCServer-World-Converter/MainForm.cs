@@ -27,6 +27,7 @@ using Newtonsoft.Json.Linq;
 using Substrate;
 using Substrate.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -94,6 +95,39 @@ namespace MCServer_World_Converter
             }
 
             NbtWorld world = NbtWorld.Open(sourcePath);
+
+            if (Directory.Exists(outputPath + "\\" + world.Level.LevelName))
+            {
+                MessageBox.Show("World folder exists already, stopping.");
+                return;
+            }
+            else
+            {
+                Directory.CreateDirectory(outputPath + "\\" + world.Level.LevelName);
+            }
+
+            DirectoryCopy(sourcePath, outputPath + "\\" + world.Level.LevelName, true);
+
+            
+            IniFile iniFile = new IniFile(outputPath + "\\" + world.Level.LevelName + "\\" + "world.ini");
+            iniFile.WriteValue("General", "Gamemode", ((int)world.Level.GameType).ToString());
+            iniFile.WriteValue("General", "TimeInTicks", world.Level.Time.ToString());
+            iniFile.WriteValue("SpawnPosition", "X", world.Level.Spawn.X.ToString());
+            iniFile.WriteValue("SpawnPosition", "Y", world.Level.Spawn.Y.ToString());
+            iniFile.WriteValue("SpawnPosition", "Z", world.Level.Spawn.Z.ToString());
+            iniFile.WriteValue("Seed", "Seed", world.Level.RandomSeed.ToString());
+            
+
+            if (File.Exists(sourcePath + "\\..\\server.properties"))
+            {
+                IDictionary<string, string> serverProperties = ReadDictionaryFile(sourcePath + "\\..\\server.properties");
+                iniFile.WriteValue("Mechanics", "CommandBlocksEnabled", (serverProperties["enable-command-block"] == "true" ? 1 : 0).ToString());
+                iniFile.WriteValue("Mechanics", "PVPEnabled", (serverProperties["pvp"] == "true" ? 1 : 0).ToString());
+                iniFile.WriteValue("SpawnPosition", "MaxViewDistance", serverProperties["view-distance"]);
+                iniFile.WriteValue("SpawnProtect", "ProtectRadius", serverProperties["spawn-protection"]);
+                iniFile.WriteValue("Difficulty", "WorldDifficulty", serverProperties["difficulty"]);
+            }
+
             PlayerManager playerManager = (PlayerManager) world.GetPlayerManager();
             
             foreach (Player player in playerManager)
@@ -131,6 +165,8 @@ namespace MCServer_World_Converter
                 writer.Flush();
                 writer.Close();
             }
+
+            MessageBox.Show("Done!");
         }
 
         private JArray convertInventory(ItemCollection itemCollection, int length)
@@ -219,6 +255,76 @@ namespace MCServer_World_Converter
             }
 
             return array;
+        }
+
+        private static void DirectoryCopy(string sourceDirName, string destDirName, bool copySubDirs)
+        {
+            // Get the subdirectories for the specified directory.
+            DirectoryInfo dir = new DirectoryInfo(sourceDirName);
+            DirectoryInfo[] dirs = dir.GetDirectories();
+
+            if (!dir.Exists)
+            {
+                throw new DirectoryNotFoundException(
+                    "Source directory does not exist or could not be found: "
+                    + sourceDirName);
+            }
+
+            // If the destination directory doesn't exist, create it. 
+            if (!Directory.Exists(destDirName))
+            {
+                Directory.CreateDirectory(destDirName);
+            }
+
+            // Get the files in the directory and copy them to the new location.
+            FileInfo[] files = dir.GetFiles();
+            foreach (FileInfo file in files)
+            {
+                string temppath = Path.Combine(destDirName, file.Name);
+                file.CopyTo(temppath, false);
+            }
+
+            // If copying subdirectories, copy them and their contents to new location. 
+            if (copySubDirs)
+            {
+                foreach (DirectoryInfo subdir in dirs)
+                {
+                    if(subdir.Name == "playerdata" || subdir.Name == "players")
+                    {
+                        continue;
+                    }
+
+                    string temppath = Path.Combine(destDirName, subdir.Name);
+                    DirectoryCopy(subdir.FullName, temppath, copySubDirs);
+                }
+            }
+        }
+
+        public static IDictionary<string, string> ReadDictionaryFile(string fileName)
+        {
+            Dictionary<string, string> dictionary = new Dictionary<string, string>();
+            foreach (string line in File.ReadAllLines(fileName))
+            {
+                if ((!string.IsNullOrEmpty(line)) &&
+                    (!line.StartsWith(";")) &&
+                    (!line.StartsWith("#")) &&
+                    (!line.StartsWith("'")) &&
+                    (line.Contains('=')))
+                {
+                    int index = line.IndexOf('=');
+                    string key = line.Substring(0, index).Trim();
+                    string value = line.Substring(index + 1).Trim();
+
+                    if ((value.StartsWith("\"") && value.EndsWith("\"")) ||
+                        (value.StartsWith("'") && value.EndsWith("'")))
+                    {
+                        value = value.Substring(1, value.Length - 2);
+                    }
+                    dictionary.Add(key, value);
+                }
+            }
+
+            return dictionary;
         }
     }
 }
