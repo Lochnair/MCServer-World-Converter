@@ -87,7 +87,7 @@ namespace MCServer_World_Converter
 
             string sourcePath = sourceTextBox.Text;
             string outputPath = outputTextBox.Text;
-            string playerPath = outputPath + "\\players";
+            string playerPath = Path.Combine(outputPath, "players");
 
             if (!Directory.Exists(playerPath))
             {
@@ -96,31 +96,30 @@ namespace MCServer_World_Converter
 
             NbtWorld world = NbtWorld.Open(sourcePath);
 
-            if (Directory.Exists(outputPath + "\\" + world.Level.LevelName))
+            if (Directory.Exists(Path.Combine(outputPath, world.Level.LevelName)))
             {
                 MessageBox.Show("World folder exists already, stopping.");
                 return;
             }
             else
             {
-                Directory.CreateDirectory(outputPath + "\\" + world.Level.LevelName);
+                Directory.CreateDirectory(Path.Combine(outputPath, world.Level.LevelName));
             }
 
-            DirectoryCopy(sourcePath, outputPath + "\\" + world.Level.LevelName, true);
+            DirectoryCopy(sourcePath, Path.Combine(outputPath, world.Level.LevelName), true);
 
-            
-            IniFile iniFile = new IniFile(outputPath + "\\" + world.Level.LevelName + "\\" + "world.ini");
+
+            IniFile iniFile = new IniFile(Path.Combine(outputPath, world.Level.LevelName, "world.ini"));
             iniFile.WriteValue("General", "Gamemode", ((int)world.Level.GameType).ToString());
             iniFile.WriteValue("General", "TimeInTicks", world.Level.Time.ToString());
             iniFile.WriteValue("SpawnPosition", "X", world.Level.Spawn.X.ToString());
             iniFile.WriteValue("SpawnPosition", "Y", world.Level.Spawn.Y.ToString());
             iniFile.WriteValue("SpawnPosition", "Z", world.Level.Spawn.Z.ToString());
             iniFile.WriteValue("Seed", "Seed", world.Level.RandomSeed.ToString());
-            
 
-            if (File.Exists(sourcePath + "\\..\\server.properties"))
+            if (File.Exists(Path.Combine(Directory.GetParent(sourcePath).FullName, "server.properties")))
             {
-                IDictionary<string, string> serverProperties = ReadDictionaryFile(sourcePath + "\\..\\server.properties");
+                IDictionary<string, string> serverProperties = ReadDictionaryFile(Path.Combine(Directory.GetParent(sourcePath).FullName, "server.properties"));
                 iniFile.WriteValue("Mechanics", "CommandBlocksEnabled", (serverProperties["enable-command-block"] == "true" ? 1 : 0).ToString());
                 iniFile.WriteValue("Mechanics", "PVPEnabled", (serverProperties["pvp"] == "true" ? 1 : 0).ToString());
                 iniFile.WriteValue("SpawnPosition", "MaxViewDistance", serverProperties["view-distance"]);
@@ -151,13 +150,13 @@ namespace MCServer_World_Converter
                 rootObject.Add("world", player.World);
                 rootObject.Add("xpCurrent", player.XPLevel);
                 rootObject.Add("xpTotal", player.XPTotal);
-
+                
                 string uuidPrefix = player.Name.Substring(0, 2);
-                string outputFile = playerPath + "\\" + uuidPrefix + "\\" + player.Name.Substring(2) + ".json";
-
-                if (!Directory.Exists(playerPath + "\\" + uuidPrefix))
+                string outputFile = Path.Combine(playerPath, uuidPrefix, player.Name.Substring(2) + ".json");
+                
+                if (!Directory.Exists(Path.Combine(playerPath, uuidPrefix)))
                 {
-                    Directory.CreateDirectory(playerPath + "\\" + uuidPrefix);
+                    Directory.CreateDirectory(Path.Combine(playerPath, uuidPrefix));
                 }
 
                 StreamWriter writer = new StreamWriter(outputFile);
