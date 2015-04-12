@@ -75,9 +75,9 @@ namespace MCServer_World_Converter
             foreach (Player player in playerManager)
             {
                 JObject rootObject = new JObject();
-                rootObject.Add("SpawnX", player.Spawn.X);
-                rootObject.Add("SpawnY", player.Spawn.Y);
-                rootObject.Add("SpawnZ", player.Spawn.Z);
+                rootObject.Add("SpawnX", player.Spawn.X == 0 ? world.Level.Spawn.X : player.Spawn.X);
+                rootObject.Add("SpawnX", player.Spawn.Y == 0 ? world.Level.Spawn.Y : player.Spawn.Y);
+                rootObject.Add("SpawnX", player.Spawn.Z == 0 ? world.Level.Spawn.Z : player.Spawn.Z);
                 rootObject.Add("air", player.Air);
                 rootObject.Add("enderchestinventory", convertInventory(player.EnderItems, 27));
                 rootObject.Add("food", player.HungerLevel);
