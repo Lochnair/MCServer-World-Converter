@@ -104,23 +104,25 @@ namespace MCServer_World_Converter
             DirectoryCopy(sourcePath, Path.Combine(outputPath, world.Level.LevelName), true);
 
 
-            IniFile iniFile = new IniFile(Path.Combine(outputPath, world.Level.LevelName, "world.ini"));
-            iniFile.WriteValue("General", "Gamemode", ((int)world.Level.GameType).ToString());
-            iniFile.WriteValue("General", "TimeInTicks", world.Level.Time.ToString());
-            iniFile.WriteValue("SpawnPosition", "X", world.Level.Spawn.X.ToString());
-            iniFile.WriteValue("SpawnPosition", "Y", world.Level.Spawn.Y.ToString());
-            iniFile.WriteValue("SpawnPosition", "Z", world.Level.Spawn.Z.ToString());
-            iniFile.WriteValue("Seed", "Seed", world.Level.RandomSeed.ToString());
+            INIFile iniFile = new INIFile(Path.Combine(outputPath, world.Level.LevelName, "world.ini"));
+            iniFile.SetValue("General", "Gamemode", (int)world.Level.GameType);
+            iniFile.SetValue("General", "TimeInTicks", world.Level.Time);
+            iniFile.SetValue("SpawnPosition", "X", world.Level.Spawn.X);
+            iniFile.SetValue("SpawnPosition", "Y", world.Level.Spawn.Y);
+            iniFile.SetValue("SpawnPosition", "Z", world.Level.Spawn.Z);
+            iniFile.SetValue("Seed", "Seed", world.Level.RandomSeed);
 
             if (File.Exists(Path.Combine(Directory.GetParent(sourcePath).FullName, "server.properties")))
             {
                 IDictionary<string, string> serverProperties = ReadDictionaryFile(Path.Combine(Directory.GetParent(sourcePath).FullName, "server.properties"));
-                iniFile.WriteValue("Mechanics", "CommandBlocksEnabled", (serverProperties["enable-command-block"] == "true" ? 1 : 0).ToString());
-                iniFile.WriteValue("Mechanics", "PVPEnabled", (serverProperties["pvp"] == "true" ? 1 : 0).ToString());
-                iniFile.WriteValue("SpawnPosition", "MaxViewDistance", serverProperties["view-distance"]);
-                iniFile.WriteValue("SpawnProtect", "ProtectRadius", serverProperties["spawn-protection"]);
-                iniFile.WriteValue("Difficulty", "WorldDifficulty", serverProperties["difficulty"]);
+                iniFile.SetValue("Mechanics", "CommandBlocksEnabled", serverProperties["enable-command-block"] == "true" ? 1 : 0);
+                iniFile.SetValue("Mechanics", "PVPEnabled", serverProperties["pvp"] == "true" ? 1 : 0);
+                iniFile.SetValue("SpawnPosition", "MaxViewDistance", serverProperties["view-distance"]);
+                iniFile.SetValue("SpawnProtect", "ProtectRadius", serverProperties["spawn-protection"]);
+                iniFile.SetValue("Difficulty", "WorldDifficulty", serverProperties["difficulty"]);
             }
+
+            iniFile.Flush();
 
             PlayerManager playerManager = (PlayerManager) world.GetPlayerManager();
             

@@ -54,7 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EmbeddedAssembly.cs" />
-    <Compile Include="IniFile.cs" />
+    <Compile Include="INIFile.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
