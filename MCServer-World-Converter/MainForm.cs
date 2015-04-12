@@ -44,11 +44,6 @@ namespace MCServer_World_Converter
         public MainForm()
         {
             InitializeComponent();
-
-#if DEBUG
-            sourceTextBox.Text = @"C:\Users\Nils\Desktop\lolz\world";
-            outputTextBox.Text = @"C:\Users\Nils\Desktop\MCServer";
-#endif
         }
 
         private void sourceBrowseButton_Click(object sender, EventArgs e)
