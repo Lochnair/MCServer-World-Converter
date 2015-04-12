@@ -24,19 +24,39 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace MCServer_World_Converter
 {
     static class Program
     {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool AllocConsole();
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool FreeConsole();
+
+        [DllImport("kernel32.dll")]
+        static extern bool AttachConsole(int dwProcessId);
+
+        [DllImport("user32.dll")]
+        static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern uint GetWindowThreadProcessId(IntPtr hWnd, out int lpdwProcessId);
+        
+        private const int ATTACH_PARENT_PROCESS = -1;
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             // Load assemblies
             EmbeddedAssembly.Load("MCServer_World_Converter.Newtonsoft.Json.dll", "Newtonsoft.Json.dll");
@@ -44,14 +64,73 @@ namespace MCServer_World_Converter
 
             AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
 
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
+            // Dirty hack for switching between console and GUI
+            if (!IsRunningOnMono() && args.Length > 0)
+            {
+                IntPtr ptr = GetForegroundWindow();
+
+                int u;
+
+                GetWindowThreadProcessId(ptr, out u);
+
+                Process process = Process.GetProcessById(u);
+
+                if (process.ProcessName == "cmd")
+                {
+                    AttachConsole(process.Id);
+                }
+                else
+                {
+                    AllocConsole();
+                }
+            }
+
+            if (args.Length == 2)
+            {
+                if (!Directory.Exists(args[0]))
+                {
+                    Console.WriteLine("Error: Source directory doesn't exist!");
+                    return;
+                }
+
+                if (!Directory.Exists(args[1]))
+                {
+                    Console.WriteLine("Error: Output directory doesn't exist!");
+                    return;
+                }
+
+                MainForm.Run(args[0], args[1], true);
+                
+                if (!IsRunningOnMono())
+                {
+                    FreeConsole();
+                }
+            }
+            else if (args.Length > 0)
+            {
+                Console.Write("Usage: MCServer.World.Converter <sourceDirectory> <outputDirectory>");
+
+                if (!IsRunningOnMono())
+                {
+                    FreeConsole();
+                }
+            }
+            else
+            {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                Application.Run(new MainForm());
+            }
         }
 
         static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
             return EmbeddedAssembly.Get(args.Name);
+        }
+
+        static bool IsRunningOnMono()
+        {
+            return Type.GetType("Mono.Runtime") != null;
         }
     }
 }
