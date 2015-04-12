@@ -35,22 +35,8 @@ namespace MCServer_World_Converter
 {
     static class Program
     {
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool AllocConsole();
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool FreeConsole();
-
         [DllImport("kernel32.dll")]
         static extern bool AttachConsole(int dwProcessId);
-
-        [DllImport("user32.dll")]
-        static extern IntPtr GetForegroundWindow();
-
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern uint GetWindowThreadProcessId(IntPtr hWnd, out int lpdwProcessId);
-        
-        private const int ATTACH_PARENT_PROCESS = -1;
 
         /// <summary>
         /// The main entry point for the application.
@@ -67,22 +53,7 @@ namespace MCServer_World_Converter
             // Dirty hack for switching between console and GUI
             if (!IsRunningOnMono() && args.Length > 0)
             {
-                IntPtr ptr = GetForegroundWindow();
-
-                int u;
-
-                GetWindowThreadProcessId(ptr, out u);
-
-                Process process = Process.GetProcessById(u);
-
-                if (process.ProcessName == "cmd")
-                {
-                    AttachConsole(process.Id);
-                }
-                else
-                {
-                    AllocConsole();
-                }
+                AttachConsole(-1);
             }
 
             if (args.Length == 2)
@@ -100,20 +71,10 @@ namespace MCServer_World_Converter
                 }
 
                 MainForm.Run(args[0], args[1], true);
-                
-                if (!IsRunningOnMono())
-                {
-                    FreeConsole();
-                }
             }
             else if (args.Length > 0)
             {
-                Console.Write("Usage: MCServer.World.Converter <sourceDirectory> <outputDirectory>");
-
-                if (!IsRunningOnMono())
-                {
-                    FreeConsole();
-                }
+                Console.WriteLine("Usage: MCServer.World.Converter <sourceDirectory> <outputDirectory>");
             }
             else
             {
