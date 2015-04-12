@@ -80,92 +80,10 @@ namespace MCServer_World_Converter
                 return;
             }
 
-            string sourcePath = sourceTextBox.Text;
-            string outputPath = outputTextBox.Text;
-            string playerPath = Path.Combine(outputPath, "players");
-
-            if (!Directory.Exists(playerPath))
-            {
-                Directory.CreateDirectory(playerPath);
-            }
-
-            NbtWorld world = NbtWorld.Open(sourcePath);
-
-            if (Directory.Exists(Path.Combine(outputPath, world.Level.LevelName)))
-            {
-                MessageBox.Show("World folder exists already, stopping.");
-                return;
-            }
-            else
-            {
-                Directory.CreateDirectory(Path.Combine(outputPath, world.Level.LevelName));
-            }
-
-            DirectoryCopy(sourcePath, Path.Combine(outputPath, world.Level.LevelName), true);
-
-
-            INIFile iniFile = new INIFile(Path.Combine(outputPath, world.Level.LevelName, "world.ini"));
-            iniFile.SetValue("General", "Gamemode", (int)world.Level.GameType);
-            iniFile.SetValue("General", "TimeInTicks", world.Level.Time);
-            iniFile.SetValue("SpawnPosition", "X", world.Level.Spawn.X);
-            iniFile.SetValue("SpawnPosition", "Y", world.Level.Spawn.Y);
-            iniFile.SetValue("SpawnPosition", "Z", world.Level.Spawn.Z);
-            iniFile.SetValue("Seed", "Seed", world.Level.RandomSeed);
-
-            if (File.Exists(Path.Combine(Directory.GetParent(sourcePath).FullName, "server.properties")))
-            {
-                IDictionary<string, string> serverProperties = ReadDictionaryFile(Path.Combine(Directory.GetParent(sourcePath).FullName, "server.properties"));
-                iniFile.SetValue("Mechanics", "CommandBlocksEnabled", serverProperties["enable-command-block"] == "true" ? 1 : 0);
-                iniFile.SetValue("Mechanics", "PVPEnabled", serverProperties["pvp"] == "true" ? 1 : 0);
-                iniFile.SetValue("SpawnPosition", "MaxViewDistance", serverProperties["view-distance"]);
-                iniFile.SetValue("SpawnProtect", "ProtectRadius", serverProperties["spawn-protection"]);
-                iniFile.SetValue("Difficulty", "WorldDifficulty", serverProperties["difficulty"]);
-            }
-
-            iniFile.Flush();
-
-            PlayerManager playerManager = (PlayerManager) world.GetPlayerManager();
-            
-            foreach (Player player in playerManager)
-            {
-                JObject rootObject = new JObject();
-                rootObject.Add("SpawnX", player.Spawn.X == 0 ? world.Level.Spawn.X : player.Spawn.X);
-                rootObject.Add("SpawnY", player.Spawn.Y == 0 ? world.Level.Spawn.Y : player.Spawn.Y);
-                rootObject.Add("SpawnZ", player.Spawn.Z == 0 ? world.Level.Spawn.Z : player.Spawn.Z);
-                rootObject.Add("air", player.Air);
-                rootObject.Add("enderchestinventory", convertInventory(player.EnderItems, 27));
-                rootObject.Add("food", player.HungerLevel);
-                rootObject.Add("foodExhaustion", player.HungerExhaustionLevel);
-                rootObject.Add("foodSaturation", player.HungerSaturationLevel);
-                rootObject.Add("foodTickTimer", player.HungerTimer);
-                rootObject.Add("gamemode", (int)player.GameType);
-                rootObject.Add("health", player.Health);
-                rootObject.Add("inventory", convertPlayerInventory(player.Items));
-                rootObject.Add("isflying", player.Air);
-                rootObject.Add("position", new JArray(player.Position.X, player.Position.Y, player.Position.Z));
-                rootObject.Add("rotation", new JArray(player.Rotation.Yaw, player.Rotation.Pitch, 0.0));
-                rootObject.Add("world", player.World);
-                rootObject.Add("xpCurrent", player.XPLevel);
-                rootObject.Add("xpTotal", player.XPTotal);
-                
-                string uuidPrefix = player.Name.Substring(0, 2);
-                string outputFile = Path.Combine(playerPath, uuidPrefix, player.Name.Substring(2) + ".json");
-                
-                if (!Directory.Exists(Path.Combine(playerPath, uuidPrefix)))
-                {
-                    Directory.CreateDirectory(Path.Combine(playerPath, uuidPrefix));
-                }
-
-                StreamWriter writer = new StreamWriter(outputFile);
-                writer.Write(rootObject.ToString());
-                writer.Flush();
-                writer.Close();
-            }
-
-            MessageBox.Show("Done!");
+            Run(sourceTextBox.Text, outputTextBox.Text, false);
         }
 
-        private JArray convertInventory(ItemCollection itemCollection, int length)
+        private static JArray convertInventory(ItemCollection itemCollection, int length)
         {
             JArray array = new JArray();
 
@@ -189,7 +107,7 @@ namespace MCServer_World_Converter
             return array;
         }
 
-        private JObject convertItemToObject(Item item)
+        private static JObject convertItemToObject(Item item)
         {
             JObject jItem = new JObject();
             jItem.Add("Count", item.Count);
@@ -199,7 +117,7 @@ namespace MCServer_World_Converter
             return jItem;
         }
 
-        private JArray convertPlayerInventory(ItemCollection itemCollection)
+        private static JArray convertPlayerInventory(ItemCollection itemCollection)
         {
             JArray array = new JArray();
 
@@ -321,6 +239,106 @@ namespace MCServer_World_Converter
             }
 
             return dictionary;
+        }
+
+        public static void Run(string sourcePath, string outputPath, bool console)
+        {
+            string playerPath = Path.Combine(outputPath, "players");
+
+            if (!Directory.Exists(playerPath))
+            {
+                Directory.CreateDirectory(playerPath);
+            }
+
+            NbtWorld world = NbtWorld.Open(sourcePath);
+
+            if (Directory.Exists(Path.Combine(outputPath, world.Level.LevelName)))
+            {
+                if (console)
+                {
+                    Console.WriteLine("World folder already exists, stopping.");
+                }
+                else
+                {
+                    MessageBox.Show("World folder exists already, stopping.");
+                }
+                
+                return;
+            }
+            else
+            {
+                Directory.CreateDirectory(Path.Combine(outputPath, world.Level.LevelName));
+            }
+
+            DirectoryCopy(sourcePath, Path.Combine(outputPath, world.Level.LevelName), true);
+
+
+            INIFile iniFile = new INIFile(Path.Combine(outputPath, world.Level.LevelName, "world.ini"));
+            iniFile.SetValue("General", "Gamemode", (int)world.Level.GameType);
+            iniFile.SetValue("General", "TimeInTicks", world.Level.Time);
+            iniFile.SetValue("SpawnPosition", "X", world.Level.Spawn.X);
+            iniFile.SetValue("SpawnPosition", "Y", world.Level.Spawn.Y);
+            iniFile.SetValue("SpawnPosition", "Z", world.Level.Spawn.Z);
+            iniFile.SetValue("Seed", "Seed", world.Level.RandomSeed);
+
+            if (File.Exists(Path.Combine(Directory.GetParent(sourcePath).FullName, "server.properties")))
+            {
+                IDictionary<string, string> serverProperties = ReadDictionaryFile(Path.Combine(Directory.GetParent(sourcePath).FullName, "server.properties"));
+                iniFile.SetValue("Mechanics", "CommandBlocksEnabled", serverProperties["enable-command-block"] == "true" ? 1 : 0);
+                iniFile.SetValue("Mechanics", "PVPEnabled", serverProperties["pvp"] == "true" ? 1 : 0);
+                iniFile.SetValue("SpawnPosition", "MaxViewDistance", serverProperties["view-distance"]);
+                iniFile.SetValue("SpawnProtect", "ProtectRadius", serverProperties["spawn-protection"]);
+                iniFile.SetValue("Difficulty", "WorldDifficulty", serverProperties["difficulty"]);
+            }
+
+            iniFile.Flush();
+
+            PlayerManager playerManager = (PlayerManager)world.GetPlayerManager();
+
+            foreach (Player player in playerManager)
+            {
+                JObject rootObject = new JObject();
+                rootObject.Add("SpawnX", player.Spawn.X == 0 ? world.Level.Spawn.X : player.Spawn.X);
+                rootObject.Add("SpawnY", player.Spawn.Y == 0 ? world.Level.Spawn.Y : player.Spawn.Y);
+                rootObject.Add("SpawnZ", player.Spawn.Z == 0 ? world.Level.Spawn.Z : player.Spawn.Z);
+                rootObject.Add("air", player.Air);
+                rootObject.Add("enderchestinventory", convertInventory(player.EnderItems, 27));
+                rootObject.Add("food", player.HungerLevel);
+                rootObject.Add("foodExhaustion", player.HungerExhaustionLevel);
+                rootObject.Add("foodSaturation", player.HungerSaturationLevel);
+                rootObject.Add("foodTickTimer", player.HungerTimer);
+                rootObject.Add("gamemode", (int)player.GameType);
+                rootObject.Add("health", player.Health);
+                rootObject.Add("inventory", convertPlayerInventory(player.Items));
+                rootObject.Add("isflying", player.Air);
+                rootObject.Add("position", new JArray(player.Position.X, player.Position.Y, player.Position.Z));
+                rootObject.Add("rotation", new JArray(player.Rotation.Yaw, player.Rotation.Pitch, 0.0));
+                rootObject.Add("world", player.World);
+                rootObject.Add("xpCurrent", player.XPLevel);
+                rootObject.Add("xpTotal", player.XPTotal);
+
+                string uuidPrefix = player.Name.Substring(0, 2);
+                string outputFile = Path.Combine(playerPath, uuidPrefix, player.Name.Substring(2) + ".json");
+
+                if (!Directory.Exists(Path.Combine(playerPath, uuidPrefix)))
+                {
+                    Directory.CreateDirectory(Path.Combine(playerPath, uuidPrefix));
+                }
+
+                StreamWriter writer = new StreamWriter(outputFile);
+                writer.Write(rootObject.ToString());
+                writer.Flush();
+                writer.Close();
+            }
+
+            if (console)
+            {
+                Console.WriteLine("Done!");
+            }
+            else
+            {
+                MessageBox.Show("Done!");
+            }
         }
     }
 }
